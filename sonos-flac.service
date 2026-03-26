@@ -1,0 +1,11 @@
+[Unit]
+Description=Sonos FLAC Bitrate Conversion
+After=network-online.target remote-fs.target
+Requires=remote-fs.target
+
+[Service]
+Type=oneshot
+User=mediauser
+ExecStart=/usr/bin/python3 /opt/sonos-flac/sonos_flac.py --config /opt/sonos-flac/config.yaml
+StandardOutput=journal
+StandardError=journal

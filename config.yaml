@@ -1,0 +1,15 @@
+mount_points:
+  - /mnt/nas1/music
+  - /mnt/nas2/music
+
+target_sample_rate: 48000   # Hz — Sonos maximum
+target_bit_depth: 24        # bits — Sonos maximum
+
+log_file: /var/log/sonos-flac/conversion.log
+temp_suffix: .sonosconvert.tmp
+
+# Skip files modified within this many seconds (guards against active rips)
+min_age_seconds: 60
+
+# Set to true to follow symlinks when walking directories
+follow_symlinks: false
