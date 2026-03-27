@@ -23,6 +23,7 @@ def convert_file(src: Path, dst: Path, target_sample_rate: int, target_bit_depth
         "-bits_per_raw_sample", str(target_bit_depth),
         "-map_metadata", "0",    # preserve all tags
         "-map", "0:a",           # audio stream only (avoids cover art conflicts)
+        "-f", "flac",            # explicit format — temp file extension is not .flac
         str(dst),
     ]
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
