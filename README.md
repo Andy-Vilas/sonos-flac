@@ -1,6 +1,6 @@
 # sonos-flac
 
-Scans SMB-mounted music shares for FLAC files that exceed Sonos's maximum supported spec (24-bit / 48kHz) and converts them in-place using ffmpeg. Designed to run as a nightly systemd timer on a Linux host (e.g. a Proxmox LXC container) with the NAS shares mounted via CIFS.
+Scans SMB-mounted music shares for FLAC files that exceed Sonos's maximum supported spec (24-bit / 48kHz) and converts them in-place using ffmpeg. Designed to run as a nightly systemd timer on a Rocky Linux VM with the NAS shares mounted via CIFS.
 
 ## How it works
 
@@ -15,12 +15,18 @@ Originals are never deleted if a conversion fails. A `--dry-run` mode reports wh
 ## Requirements
 
 - Python 3.8+
-- `ffmpeg` and `ffprobe` (must be built with `libsoxr` support — standard in Debian/Ubuntu packages)
+- `ffmpeg` and `ffprobe` (must be built with `libsoxr` support — available via RPMFusion on Rocky Linux)
 - `cifs-utils` (for mounting SMB shares)
 - `pyyaml`
 
 ```bash
-apt install ffmpeg cifs-utils python3-pip
+# Enable EPEL and RPMFusion (ffmpeg is not in the default Rocky Linux repos)
+dnf install epel-release
+dnf install --nogpgcheck \
+  https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm \
+  https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
+
+dnf install ffmpeg cifs-utils python3-pip
 pip3 install -r requirements.txt
 ```
 
@@ -60,6 +66,14 @@ mount -a
 Key mount options:
 - `_netdev` — wait for network before mounting
 - `nofail` — don't block boot if the NAS is unreachable
+
+**SELinux note:** Rocky Linux enforces SELinux by default. CIFS mounts may need a file context label so the service can read and write them. Either add `context=system_u:object_r:samba_share_t:s0` to each fstab entry, or allow the policy boolean:
+
+```bash
+setsebool -P use_samba_home_dirs 1
+```
+
+If `ffmpeg` or the log directory throw permission denials, check `ausearch -m avc -ts recent` and use `audit2allow` to generate a local policy module if needed.
 
 ### 3. Configure
 
