@@ -94,6 +94,7 @@ target_sample_rate: 48000   # Hz — Sonos maximum
 target_bit_depth: 24        # bits — Sonos maximum
 
 log_file: /var/log/sonos-flac/conversion.log
+cache_db: /var/lib/sonos-flac/cache.db
 temp_suffix: .sonosconvert.tmp
 
 # Skip files modified within this many seconds (guards against active rips)
@@ -147,7 +148,7 @@ python3 sonos_flac.py --config config.yaml [--dry-run] [--verbose]
 2026-03-26T02:01:05 [INFO ] MOUNT    Scanning /mnt/nas1/music
 2026-03-26T02:01:07 [INFO ] CONVERT  /mnt/nas1/music/Artist/Album/track.flac — 32bit/96000Hz → 24bit/48000Hz
 2026-03-26T02:01:22 [ERROR] FAIL     /mnt/nas1/music/Artist/Album/bad.flac — ffmpeg failed: ...
-2026-03-26T02:03:00 [INFO ] SUMMARY  scanned=412 converted=38 skipped=371 errors=1
+2026-03-26T02:03:00 [INFO ] SUMMARY  scanned=412 converted=38 skipped=371 (cache=350) errors=1
 ```
 
 Logs rotate at 10 MB, keeping 5 backups.
@@ -161,6 +162,7 @@ Logs rotate at 10 MB, keeping 5 backups.
 - **PID lock** — prevents two instances from running concurrently against the same shares
 - **Stale temp cleanup** — removes any `.sonosconvert.tmp` files left by a previously interrupted run
 - **Hardlink dedup** — won't process the same inode twice if hardlinks exist across the tree
+- **Scan cache** — SQLite database records files already verified as compliant; subsequent runs skip `ffprobe` on unchanged files (keyed on path + mtime + size)
 
 ## Project structure
 
@@ -176,6 +178,7 @@ lib/
   inspector.py         ffprobe wrapper — detects non-compliant files
   converter.py         ffmpeg wrapper — converts and atomically replaces
   logger.py            Rotating log file setup
+  cache.py             SQLite scan cache — skips ffprobe on unchanged clean files
 ```
 
 ## Conversion details

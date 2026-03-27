@@ -57,12 +57,12 @@ def check_dependencies() -> None:
         raise SystemExit(f"Required tools not found in PATH: {', '.join(missing)}\nInstall with: apt install ffmpeg")
 
 
-def process_mount_point(mount_point: str, cfg, dry_run: bool, verbose: bool, log) -> dict:
+def process_mount_point(mount_point: str, cfg, dry_run: bool, verbose: bool, log, cache) -> dict:
     from lib.scanner import scan_for_flac
     from lib.inspector import needs_conversion
     from lib.converter import safe_convert_and_replace
 
-    counts = {"scanned": 0, "converted": 0, "skipped": 0, "errors": 0}
+    counts = {"scanned": 0, "converted": 0, "skipped": 0, "errors": 0, "cache_hits": 0}
 
     if not os.path.ismount(mount_point):
         log.error("MOUNT    %s — not mounted, skipping", mount_point)
@@ -90,6 +90,19 @@ def process_mount_point(mount_point: str, cfg, dry_run: bool, verbose: bool, log
         if verbose:
             log.debug("SCAN     %s", path)
 
+        # Cache check — skip ffprobe if this exact file version was previously verified clean
+        file_stat = None
+        if cache is not None:
+            try:
+                file_stat = os.stat(path)
+                if cache.is_clean(str(path), file_stat.st_mtime, file_stat.st_size):
+                    log.debug("CACHE    %s — previously verified clean", path)
+                    counts["skipped"] += 1
+                    counts["cache_hits"] += 1
+                    continue
+            except OSError:
+                file_stat = None
+
         try:
             convert, sample_rate, bit_depth = needs_conversion(
                 path, cfg.target_sample_rate, cfg.target_bit_depth
@@ -107,6 +120,8 @@ def process_mount_point(mount_point: str, cfg, dry_run: bool, verbose: bool, log
             continue
 
         if not convert:
+            if cache is not None and not dry_run and file_stat is not None:
+                cache.mark_clean(str(path), file_stat.st_mtime, file_stat.st_size)
             log.debug("SKIP     %s — already within spec (%dbit/%dHz)", path, bit_depth, sample_rate)
             counts["skipped"] += 1
             continue
@@ -173,21 +188,27 @@ def main():
         log.error("%s", e)
         sys.exit(1)
 
-    totals = {"scanned": 0, "converted": 0, "skipped": 0, "errors": 0}
+    from lib.cache import ScanCache
+    cache = ScanCache(cfg.cache_db) if not args.dry_run else None
+
+    totals = {"scanned": 0, "converted": 0, "skipped": 0, "errors": 0, "cache_hits": 0}
 
     try:
         for mount_point in cfg.mount_points:
-            counts = process_mount_point(mount_point, cfg, args.dry_run, args.verbose, log)
+            counts = process_mount_point(mount_point, cfg, args.dry_run, args.verbose, log, cache)
             for k in totals:
                 totals[k] += counts[k]
     finally:
+        if cache is not None:
+            cache.close()
         release_pid_lock(PID_FILE)
 
     log.info(
-        "SUMMARY  scanned=%d converted=%d skipped=%d errors=%d%s",
+        "SUMMARY  scanned=%d converted=%d skipped=%d (cache=%d) errors=%d%s",
         totals["scanned"],
         totals["converted"],
         totals["skipped"],
+        totals["cache_hits"],
         totals["errors"],
         " [DRY RUN]" if args.dry_run else "",
     )

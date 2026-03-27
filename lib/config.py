@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 
@@ -14,6 +14,7 @@ class Config:
     temp_suffix: str
     min_age_seconds: int
     follow_symlinks: bool
+    cache_db: str = "/var/lib/sonos-flac/cache.db"
 
 
 def load_config(path: str) -> Config:
@@ -39,4 +40,5 @@ def load_config(path: str) -> Config:
         temp_suffix=data["temp_suffix"],
         min_age_seconds=int(data["min_age_seconds"]),
         follow_symlinks=bool(data["follow_symlinks"]),
+        cache_db=data.get("cache_db", "/var/lib/sonos-flac/cache.db"),
     )

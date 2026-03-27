@@ -6,6 +6,7 @@ target_sample_rate: 48000   # Hz — Sonos maximum
 target_bit_depth: 24        # bits — Sonos maximum
 
 log_file: /var/log/sonos-flac/conversion.log
+cache_db: /var/lib/sonos-flac/cache.db
 temp_suffix: .sonosconvert.tmp
 
 # Skip files modified within this many seconds (guards against active rips)
