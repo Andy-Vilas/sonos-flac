@@ -39,21 +39,21 @@ pip3 install -r requirements.txt
 Add entries to `/etc/fstab` for each Synology NAS share:
 
 ```
-//192.168.1.10/music  /mnt/nas1/music  cifs  credentials=/etc/nas1.cred,uid=1000,gid=1000,file_mode=0664,dir_mode=0775,iocharset=utf8,_netdev,nofail  0  0
-//192.168.1.11/music  /mnt/nas2/music  cifs  credentials=/etc/nas2.cred,uid=1000,gid=1000,file_mode=0664,dir_mode=0775,iocharset=utf8,_netdev,nofail  0  0
+//192.168.1.10/music  /mnt/nas1/music  cifs  credentials=/etc/.nas.cred,uid=1000,gid=1000,file_mode=0664,dir_mode=0775,iocharset=utf8,_netdev,nofail,vers=2.0  0  0
+//192.168.1.11/music  /mnt/nas2/music  cifs  credentials=/etc/.nas.cred,uid=1000,gid=1000,file_mode=0664,dir_mode=0775,iocharset=utf8,_netdev,nofail,vers=2.0  0  0
 ```
 
-Create a credentials file for each NAS (owned by root, mode 600):
+Create a shared credentials file (owned by root, mode 600):
 
 ```
-# /etc/nas1.cred
+# /etc/.nas.cred
 username=mediauser
 password=yourpassword
 domain=WORKGROUP
 ```
 
 ```bash
-chmod 600 /etc/nas1.cred /etc/nas2.cred
+chmod 600 /etc/.nas.cred
 mount -a
 ```
 
