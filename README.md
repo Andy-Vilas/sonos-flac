@@ -21,14 +21,20 @@ Originals are never deleted if a conversion fails. A `--dry-run` mode reports wh
 
 ```bash
 # Enable EPEL and RPMFusion (ffmpeg is not in the default Rocky Linux repos)
-dnf install epel-release
-dnf install --nogpgcheck \
+sudo dnf install epel-release
+sudo dnf install --nogpgcheck \
   https://mirrors.rpmfusion.org/free/el/rpmfusion-free-release-$(rpm -E %rhel).noarch.rpm \
   https://mirrors.rpmfusion.org/nonfree/el/rpmfusion-nonfree-release-$(rpm -E %rhel).noarch.rpm
 
-dnf install ffmpeg cifs-utils python3-pip
+# Enable CRB repo — required to satisfy the ladspa dependency in the ffmpeg chain
+sudo dnf config-manager --enable crb
+sudo dnf install ladspa
+
+sudo dnf install ffmpeg cifs-utils python3-pip
 pip3 install -r requirements.txt
 ```
+
+> **Note:** if `pip3` is not found after installing `python3-pip`, run `hash -r` to refresh your shell's command cache, or use `python3 -m pip` as a drop-in replacement.
 
 ## Setup
 
